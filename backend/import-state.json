@@ -1,0 +1,14 @@
+{
+  "./data/GeoLite2-ASN-Blocks-IPv4.csv": {
+    "processed_lines": 624876,
+    "completed": true
+  },
+  "./data/GeoLite2-City-Locations-en.csv": {
+    "processed_lines": 79978,
+    "completed": true
+  },
+  "./data/GeoLite2-City-Blocks-IPv4.csv": {
+    "processed_lines": 1321000,
+    "completed": false
+  }
+}

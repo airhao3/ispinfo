@@ -1,0 +1,20 @@
+name = "ispinfo-frontend"
+compatibility_date = "2024-07-01"
+
+# For Cloudflare Pages
+[site]
+bucket = "./dist"
+
+# For local development with wrangler dev
+[build]
+command = "npm run build"
+
+# For production deployment
+[env.production]
+name = "ispinfo-frontend"
+route = "ispinfo.pages.dev/*"
+
+# For preview deployments
+[env.preview]
+name = "ispinfo-frontend-preview"
+route = "preview.ispinfo.pages.dev/*"

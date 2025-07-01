@@ -1,0 +1,60 @@
+/* Global styles */
+body, #root {
+  background-color: #f0f2f5;
+  font-family: Inter, Helvetica, Arial, sans-serif;
+  color: #343a40;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  display: block;
+  margin: 0 auto !important;
+  padding: 0 15px;
+}
+
+/* Primary brand color */
+:root {
+  --primary-blue: #007bff;
+}
+
+.btn-primary,
+.text-primary,
+.link-primary {
+  background-color: var(--primary-blue) !important;
+  border-color: var(--primary-blue) !important;
+  color: white !important;
+}
+
+.btn-outline-primary {
+  color: var(--primary-blue) !important;
+  border-color: var(--primary-blue) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-blue) !important;
+  color: white !important;
+}
+
+/* Code block style */
+pre.code-block {
+  background-color: #282c34;
+  color: #abb2bf;
+  padding: 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+}
+
+p {
+  line-height: 1.6;
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ispinfo-backend",
+  "main": "dist/index.js",
+  "compatibility_date": "2024-06-21",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "build": {
+    "command": "npm run build",
+    "cwd": "."
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ispinfo-db",
+      "database_id": "c341f189-9e03-4990-824a-7a9c21205a72"
+    }
+  ],
+  "site": {
+    "bucket": "./public"
+  },
+  "env": {
+    "production": {
+      "name": "ispinfo-backend-production",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "ispinfo-db",
+          "database_id": "c341f189-9e03-4990-824a-7a9c21205a72"
+        }
+      ]
+    }
+  }
+}
