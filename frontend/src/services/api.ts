@@ -1,5 +1,5 @@
-// 使用环境变量配置API基础URL，如果未设置则使用默认值
-const API_BASE_URL = 'https://ispinfo-backend-production.airhao3.workers.dev';
+// 生产环境API地址，所有请求均指向 https://api.ispinfo.io
+const API_BASE_URL = 'https://api.ispinfo.io';
 
 console.log('Environment Variables:', {
   VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
@@ -12,23 +12,7 @@ console.log('Environment Variables:', {
 console.log('API Base URL:', API_BASE_URL);  // 调试日志
 
 export interface IPInfo {
-  ip: string;
-  hostname?: string;
-  city?: string;
-  region?: string;
-  region_name?: string;
-  country?: string;
-  country_name?: string;
-  loc?: string;
-  org?: string;
-  postal?: string;
-  timezone?: string;
-  latitude?: number;
-  longitude?: number;
-  autonomous_system_number?: number;
-  autonomous_system_organization?: string;
-  note?: string;
-  [key: string]: any; // 允许其他字段
+  [key: string]: any; // 允许所有字段，以匹配 ipregistry 的完整响应
 }
 
 // 获取IP信息
@@ -60,60 +44,20 @@ async function fetchIPInfo(ip: string = ''): Promise<IPInfo> {
   console.log('Response status:', response.status);
   
   if (!response.ok) {
-    let errorText;
+    let errorData;
     try {
-      const errorData = await response.json();
-      errorText = errorData.error || errorData.message || response.statusText;
-      // If we have a 404 but got some basic IP info, return that instead of error
-      if (response.status === 404 && errorData.ip) {
-        return errorData as IPInfo;
-      }
+      errorData = await response.json();
     } catch (e) {
-      errorText = await response.text();
+      errorData = { error: await response.text() };
     }
-    console.error('API Error:', response.status, errorText);
-    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    console.error('API Error:', response.status, errorData);
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
   
-  let data;
-  try {
-    data = await response.json();
-    console.log('Response data:', data);
-    
-    // 检查是否有错误信息
-    if (data.error) {
-      throw new Error(data.error);
-    }
-    
-    // 确保返回的数据包含必需的 ip 字段
-    if (!data.ip) {
-      throw new Error('Invalid response: missing IP address');
-    }
-    
-    // 构建标准的 IPInfo 对象
-    const ipInfo: IPInfo = {
-      ip: data.ip || '',
-      city: data.city,
-      region: data.region_name || data.region,
-      country: data.country_name || data.country,
-      loc: data.loc || (data.latitude && data.longitude ? `${data.latitude},${data.longitude}` : undefined),
-      org: data.org || data.autonomous_system_organization,
-      postal: data.postal,
-      timezone: data.timezone,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      autonomous_system_number: data.autonomous_system_number,
-      autonomous_system_organization: data.autonomous_system_organization,
-      hostname: data.hostname,
-      // 添加其他可能需要的字段
-      ...data // 保留其他字段
-    };
-    
-    return ipInfo;
-  } catch (e) {
-    // 如果不是JSON，返回纯文本IP
-    return { ip: data.trim() };
-  }
+  let data = await response.json();
+  console.log('Response data:', data);
+  
+  return data; // 直接返回完整数据
 }
 
 // 查询指定IP的信息
@@ -146,32 +90,19 @@ export const getMyIP = async (): Promise<IPInfo> => {
     });
     
     if (!response.ok) {
-      let errorMessage = `Error: ${response.status} ${response.statusText}`;
+      let errorData;
       try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorMessage;
+        errorData = await response.json();
       } catch (e) {
-        // If we can't parse the error as JSON, use the status text
+        errorData = { error: await response.text() };
       }
-      console.error('Error fetching client IP:', errorMessage);
-      return {
-        ip: 'Unknown',
-        error: errorMessage,
-        note: 'This may be because the IP is IPv6 or not in our database'
-      };
+      console.error('Error fetching client IP:', response.status, errorData);
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     
     const data = await response.json();
     
-    // If we only have an IP and no other info, that's fine - return what we have
-    if (data.ip && Object.keys(data).length === 1) {
-      return {
-        ip: data.ip,
-        message: 'No additional information available for this IP address',
-        note: 'This may be because the IP is IPv6 or not in our database'
-      };
-    }
-    return data;
+    return data; // 直接返回完整数据
   } catch (error) {
     console.error('Error fetching IP information:', error);
     // Return a basic response with just the error

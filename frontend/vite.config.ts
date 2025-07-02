@@ -40,7 +40,5 @@ export default defineConfig({
     strictPort: true,
   },
   // Ensure environment variables are properly passed to the client
-  define: {
-    'process.env': {}
-  }
+  
 });

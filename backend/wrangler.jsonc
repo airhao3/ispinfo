@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ispinfo-backend",
+  "name": "ispinfo-backend-worker",
   "main": "dist/index.js",
   "compatibility_date": "2024-06-21",
   "compatibility_flags": ["global_fetch_strictly_public"],
@@ -8,24 +8,22 @@
     "command": "npm run build",
     "cwd": "."
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "ispinfo-db",
-      "database_id": "c341f189-9e03-4990-824a-7a9c21205a72"
-    }
-  ],
   "site": {
     "bucket": "./public"
   },
+  "routes": [
+    {
+      "pattern": "api.ispinfo.io/*",
+      "zone_id": "8a402f05b3cd21d466170171fdbfea81" // You need to replace YOUR_ZONE_ID with your actual Cloudflare Zone ID
+    }
+  ],
   "env": {
     "production": {
-      "name": "ispinfo-backend-production",
-      "d1_databases": [
+      "name": "ispinfo-backend-worker-production",
+      "routes": [
         {
-          "binding": "DB",
-          "database_name": "ispinfo-db",
-          "database_id": "c341f189-9e03-4990-824a-7a9c21205a72"
+          "pattern": "api.ispinfo.io/*",
+          "zone_id": "Y8a402f05b3cd21d466170171fdbfea8" // You need to replace YOUR_ZONE_ID with your actual Cloudflare Zone ID
         }
       ]
     }

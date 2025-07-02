@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "ispinfo-frontend-worker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,12 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "bootstrap": "^5.3.7",
-    "react": "^19.1.0",
-    "react-bootstrap": "^2.10.10",
-    "react-dom": "^19.1.0",
-    "react-icons": "^5.5.0"
-  },
+		"bootstrap": "^5.3.7",
+		"react": "^19.1.0",
+		"react-bootstrap": "^2.10.10",
+		"react-dom": "^19.1.0",
+		"react-icons": "^5.5.0",
+		"@cloudflare/kv-asset-handler": "^0.4.0"
+	},
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@types/node": "^24.0.8",

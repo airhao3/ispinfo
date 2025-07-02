@@ -29,6 +29,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "files": ["src/components/index.d.ts"]
+  "include": ["src"]
 }
