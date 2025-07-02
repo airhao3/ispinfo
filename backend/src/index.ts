@@ -7,11 +7,42 @@ interface Env {
   IPREGISTRY_API_KEY: string;
 }
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://ispinfo.io'
+];
+
+// Helper function to set CORS headers
+function setCorsHeaders(headers: Headers, request: Request): Headers {
+  const origin = request.headers.get('Origin') || '';
+
+  // Set allowed origin
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    headers.set('Access-Control-Allow-Origin', origin);
+  } else {
+    headers.set('Access-Control-Allow-Origin', 'https://ispinfo.io');
+  }
+
+  // Set other CORS headers
+  headers.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', request.headers.get('Access-Control-Request-Headers') || '*');
+  headers.set('Access-Control-Allow-Credentials', 'true');
+  headers.set('Access-Control-Max-Age', '86400');
+  return headers;
+}
+
+// Helper function to create a CORS response
+function createCorsResponse(body: BodyInit | null, init: ResponseInit, request: Request): Response {
+  const headers = new Headers(init.headers);
+  setCorsHeaders(headers, request);
+  return new Response(body, { ...init, headers });
+}
+
 // Declare a client variable in global scope to reuse the instance and its cache
 let ipregistryClient: IpregistryClient | null = null;
 
 // Helper function to get IP info from ipregistry
-async function getIPInfo(ip: string, apiKey: string) {
+async function getIPInfo(ip: string, apiKey: string): Promise<IpInfo | { error: string; status: number }> {
   console.log('Received API Key:', apiKey);
   console.log('Attempting to lookup IP:', ip);
   if (!apiKey) {
@@ -29,9 +60,6 @@ async function getIPInfo(ip: string, apiKey: string) {
 
   try {
     const response: ApiResponse<IpInfo> = await ipregistryClient.lookupIp(ip);
-
-    // Map the response to our desired format
-    // This mapping should be consistent with what the gateway worker expects
     return response.data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -60,15 +88,9 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // Handle CORS preflight requests
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': 'https://ispinfo.io',
-          'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
-          'Access-Control-Allow-Headers': request.headers.get('Access-Control-Request-Headers') || '',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
+      const headers = new Headers();
+      setCorsHeaders(headers, request);
+      return new Response(null, { status: 204, headers });
     }
 
     const url = new URL(request.url);
@@ -84,38 +106,52 @@ export default {
       }
     }
 
-    let response: Response;
-
     if (!ipToLookup) {
-      response = new Response(JSON.stringify({ error: 'No IP address provided or invalid format.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else {
+      return createCorsResponse(
+        JSON.stringify({ error: 'No IP address provided or invalid format.' }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        },
+        request
+      );
+    }
+
+    try {
       // Get data from ipregistry
       const ipInfoResult = await getIPInfo(ipToLookup, env.IPREGISTRY_API_KEY);
 
-      // Handle errors from the API call
+      // Check if the result has an error property
       if ('error' in ipInfoResult) {
-        response = new Response(JSON.stringify({ ip: ipToLookup, error: ipInfoResult.error }), {
-          status: ipInfoResult.status || 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return createCorsResponse(
+          JSON.stringify({ ip: ipToLookup, error: ipInfoResult.error }),
+          { 
+            status: 'status' in ipInfoResult ? ipInfoResult.status : 500,
+            headers: { 'Content-Type': 'application/json' }
+          },
+          request
+        );
       } else {
-        // Send the successful response
-        response = new Response(JSON.stringify(ipInfoResult, null, 2), {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+        // Return the successful response
+        return createCorsResponse(
+          JSON.stringify(ipInfoResult),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          },
+          request
+        );
       }
+    } catch (error) {
+      console.error('Error processing request:', error);
+      return createCorsResponse(
+        JSON.stringify({ error: 'Internal server error' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        },
+        request
+      );
     }
-
-    // Add CORS headers to all responses
-    response.headers.set('Access-Control-Allow-Origin', 'https://ispinfo.io');
-    response.headers.set('Access-Control-Allow-Methods', 'GET,HEAD,POST,OPTIONS');
-    response.headers.set('Access-Control-Max-Age', '86400');
-
-    return response;
   },
 } satisfies ExportedHandler<Env>;
