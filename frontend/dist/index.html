@@ -3,56 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Info</title>
-    <link rel="icon" href="data:,">
+    <title>IP Information</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 20px auto; 
-            padding: 20px; 
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
             line-height: 1.6;
         }
-        #json-output {
-            white-space: pre-wrap;
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 20px;
-            min-height: 100px;
-        }
-        .loading { color: #666; }
-        .error { color: #d32f2f; }
-        .ip-address {
-            font-weight: bold;
-            color: #1976d2;
-        }
         .search-box {
-            margin: 20px 0;
+            margin-bottom: 20px;
         }
-        input[type="text"] {
+        #ip-input {
             padding: 8px;
-            width: 200px;
+            width: 300px;
             margin-right: 10px;
         }
-        button {
+        #search-button {
             padding: 8px 16px;
-            background: #1976d2;
+            background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
-        button:hover {
-            background: #1565c0;
+        #search-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #ip-address {
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        #json-output {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            min-height: 100px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        #cf-turnstile {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
         }
     </style>
+    <!-- Load Turnstile script in the head -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
 </head>
 <body>
     <h1>IP Information</h1>
     <div class="search-box">
-        <input type="text" id="ip-input" placeholder="Enter IP address">
-        <button onclick="searchIP()">Search</button>
+        <div>
+            <input type="text" id="ip-input" placeholder="Enter IP address">
+            <button id="search-button" disabled>Search</button>
+        </div>
+        <div id="cf-turnstile"></div>
     </div>
     <div id="ip-address" class="ip-address"></div>
     <div id="json-output" class="loading">Loading IP information...</div>
@@ -68,17 +84,30 @@
             ipAddressDiv.textContent = '';
             
             try {
-                // Build API URL
-                let apiUrl = 'https://api.ispinfo.io/ip';
+                let apiUrl = 'https://api.ispinfo.io';
+                const headers = new Headers();
+                
+                // Only include Turnstile token for specific IP lookups
                 if (ip) {
-                    // If IP is provided, query that IP
+                    // If IP is provided, use the specific IP endpoint
                     apiUrl += `/${ip}`;
+                    
+                    // Only add Turnstile token for specific IP lookups
+                    if (turnstileToken) {
+                        headers.append('CF-Turnstile-Token', turnstileToken);
+                    } else {
+                        throw new Error('Please complete the CAPTCHA verification');
+                    }
+                } else {
+                    // For the root path, use the /ip endpoint which doesn't require Turnstile
+                    apiUrl += '/ip';
                 }
                 
-                const response = await fetch(apiUrl);
+                const response = await fetch(apiUrl, { headers });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
@@ -90,10 +119,15 @@
                 // Show the full JSON response
                 jsonOutputDiv.textContent = JSON.stringify(data, null, 2);
                 jsonOutputDiv.className = '';
-            } catch (error) {
-                jsonOutputDiv.textContent = `Error: ${error.message}`;
+                
+                // Update URL without reloading the page
+                const newUrl = ip ? `/${ip}` : '/';
+                window.history.pushState({}, '', newUrl);
+                
+            } catch (err) {
+                jsonOutputDiv.textContent = `Error: ${err.message}`;
                 jsonOutputDiv.className = 'error';
-                console.error('Error fetching data:', error);
+                console.error('Error:', err);
             }
         }
 
@@ -116,31 +150,94 @@
         // Handle browser back/forward buttons
         window.onpopstate = function() {
             const path = window.location.pathname;
-            if (path === '/') {
+            if (path === '/' || path === '') {
                 document.title = 'IP Info - My IP';
                 document.getElementById('ip-input').value = '';
-                fetchIPInfo();
+                // Only fetch visitor's IP if not already loaded
+                if (!document.getElementById('ip-address').textContent) {
+                    fetchIPInfo();
+                }
             } else {
                 const ip = path.substring(1);
                 document.getElementById('ip-input').value = ip;
                 document.title = `IP Info - ${ip}`;
-                fetchIPInfo(ip);
+                // Don't fetch IP info here, wait for user to submit the form
             }
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const path = window.location.pathname;
+        // Initialize Turnstile
+        let turnstileToken = '';
+        let turnstileWidgetId = null;
+        
+        // This function will be called when Turnstile script loads
+        window.onTurnstileLoad = function() {
+            renderTurnstile();
             
-            if (path === '/') {
-                // When visiting the root path, get visitor's own IP info
-                document.title = 'IP Info - My IP';
+            // After Turnstile is loaded, check if we need to fetch visitor's IP
+            const path = window.location.pathname;
+            if (path === '/' || path === '') {
                 fetchIPInfo();
-            } else {
-                // When visiting /<ip>, get info for the specified IP
+            }
+        };
+        
+        function renderTurnstile() {
+            // Only render if not already rendered and turnstile is available
+            if (typeof turnstile === 'undefined' || turnstileWidgetId !== null) {
+                return;
+            }
+            
+            // Get the site key from the environment variable
+            const siteKey = '0x4AAAAAABjK5dsGrb77UcTY'; // This is a test key - replace with your actual Turnstile site key
+            
+            try {
+                turnstileWidgetId = turnstile.render('#cf-turnstile', {
+                    sitekey: siteKey,
+                    callback: function(token) {
+                        turnstileToken = token;
+                        document.getElementById('search-button').disabled = false;
+                    },
+                    'expired-callback': function() {
+                        turnstileToken = '';
+                        document.getElementById('search-button').disabled = true;
+                    },
+                    'error-callback': function() {
+                        turnstileToken = '';
+                        document.getElementById('search-button').disabled = true;
+                    }
+                });
+            } catch (e) {
+                console.error('Error rendering Turnstile:', e);
+                // If Turnstile fails to render, enable the search button
+                document.getElementById('search-button').disabled = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchButton = document.getElementById('search-button');
+            const ipInput = document.getElementById('ip-input');
+            
+            // Initially disable search button (will be enabled by Turnstile callback)
+            searchButton.disabled = true;
+            
+            // Try to render Turnstile immediately (in case it's already loaded)
+            renderTurnstile();
+            
+            // If Turnstile is not loaded yet, the onTurnstileLoad callback will handle it
+            
+            // Handle search form submission
+            searchButton.addEventListener('click', searchIP);
+            ipInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchIP();
+                }
+            });
+            
+            // Update URL and title based on current path
+            const path = window.location.pathname;
+            if (path !== '/' && path !== '') {
                 const ip = path.substring(1);
-                document.getElementById('ip-input').value = ip;
+                ipInput.value = ip;
                 document.title = `IP Info - ${ip}`;
-                fetchIPInfo(ip);
             }
         });
     </script>

@@ -2,9 +2,20 @@
 
 import { ApiError, ApiResponse, ClientError, IpInfo, IpregistryClient } from '@ipregistry/client';
 
+// Interface for Turnstile verification response
+interface TurnstileResponse {
+  success: boolean;
+  'error-codes'?: string[];
+  challenge_ts?: string;
+  hostname?: string;
+  action?: string;
+  cdata?: string;
+}
+
 // Define the environment interface
 interface Env {
   IPREGISTRY_API_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 // Allowed origins for CORS
@@ -40,6 +51,50 @@ function createCorsResponse(body: BodyInit | null, init: ResponseInit, request: 
 
 // Declare a client variable in global scope to reuse the instance and its cache
 let ipregistryClient: IpregistryClient | null = null;
+
+// Helper function to verify Turnstile token
+async function verifyTurnstileToken(token: string, secretKey: string, ip: string): Promise<{ success: boolean; error?: string }> {
+  console.log('Verifying Turnstile token...');
+  console.log('Token exists:', !!token);
+  
+  if (!token) {
+    console.log('No token provided');
+    return { success: false, error: 'No token provided' };
+  }
+  
+  const formData = new FormData();
+  formData.append('secret', secretKey);
+  formData.append('response', token);
+  formData.append('remoteip', ip);
+
+  try {
+    console.log('Sending verification request to Turnstile...');
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const data: TurnstileResponse = await response.json();
+    console.log('Turnstile response:', JSON.stringify(data));
+    
+    if (!data.success) {
+      console.log('Turnstile verification failed with errors:', data['error-codes']);
+      return { 
+        success: false, 
+        error: `Turnstile verification failed: ${data['error-codes']?.join(', ') || 'Unknown error'}`
+      };
+    }
+    
+    console.log('Turnstile verification successful');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error verifying Turnstile token:', error);
+    return { 
+      success: false, 
+      error: `Error during verification: ${error?.message || 'Unknown error'}` 
+    };
+  }
+}
 
 // Helper function to get IP info from ipregistry
 async function getIPInfo(ip: string, apiKey: string): Promise<IpInfo | { error: string; status: number }> {
@@ -117,17 +172,41 @@ export default {
       );
     }
 
-    // Check Referer header to restrict direct API access
-    const referer = request.headers.get('Referer');
-    if (!referer || !referer.startsWith('https://ispinfo.io')) {
-      return createCorsResponse(
-        JSON.stringify({ error: 'Access denied: Invalid or missing Referer header.' }),
-        {
-          status: 403, // Forbidden
-          headers: { 'Content-Type': 'application/json' }
-        },
-        request
-      );
+    // Verify Turnstile token for non-root paths
+    const turnstileToken = request.headers.get('CF-Turnstile-Token');
+    const clientIP = request.headers.get('CF-Connecting-IP') || '';
+    
+    // Only require Turnstile verification for specific IP lookups (e.g., /8.8.8.8)
+    const isSpecificIpLookup = /^\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(path);
+    
+    if (isSpecificIpLookup) {
+      if (!turnstileToken) {
+        return createCorsResponse(
+          JSON.stringify({ error: 'Turnstile token is required for IP lookups.' }),
+          {
+            status: 400, // Bad Request
+            headers: { 'Content-Type': 'application/json' }
+          },
+          request
+        );
+      }
+      
+      const verification = await verifyTurnstileToken(turnstileToken, env.TURNSTILE_SECRET_KEY, clientIP);
+            
+      if (!verification.success) {
+        console.log('Turnstile verification failed:', verification.error);
+        return createCorsResponse(
+          JSON.stringify({ 
+            error: 'Access denied: Invalid Turnstile token.',
+            details: verification.error
+          }),
+          {
+            status: 403, // Forbidden
+            headers: { 'Content-Type': 'application/json' }
+          },
+          request
+        );
+      }
     }
 
     try {
