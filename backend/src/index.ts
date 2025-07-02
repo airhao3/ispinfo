@@ -117,6 +117,19 @@ export default {
       );
     }
 
+    // Check Referer header to restrict direct API access
+    const referer = request.headers.get('Referer');
+    if (!referer || !referer.startsWith('https://ispinfo.io')) {
+      return createCorsResponse(
+        JSON.stringify({ error: 'Access denied: Invalid or missing Referer header.' }),
+        {
+          status: 403, // Forbidden
+          headers: { 'Content-Type': 'application/json' }
+        },
+        request
+      );
+    }
+
     try {
       // Get data from ipregistry
       const ipInfoResult = await getIPInfo(ipToLookup, env.IPREGISTRY_API_KEY);
