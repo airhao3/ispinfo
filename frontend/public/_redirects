@@ -1,2 +1,0 @@
-# Handle client-side routing, return 404s if the file doesn't exist
-/* /index.html 200
