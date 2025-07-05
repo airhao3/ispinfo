@@ -20,7 +20,9 @@ interface Env {
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-  'https://ispinfo.io'
+  'https://ispinfo.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
 ];
 
 // Helper function to set CORS headers
