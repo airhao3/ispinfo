@@ -1,19 +1,31 @@
-# ispinfo.io Clone
+# ispinfo.io
 
-This project is a clone of `ispinfo.io`, providing IP address and ASN information lookup services. It leverages Cloudflare's serverless ecosystem (Workers, D1, Pages) for development and deployment, and uses the open-source GeoLite2 database as the core data source.
-
-## Technologies Used
-
-*   **Data Source:** ipregistry.co API
-*   **Backend API:** Cloudflare Workers (TypeScript) - `ispinfo-gateway-worker` (API Gateway) and `ispinfo-backend-worker` (Dispatcher/Aggregator)
-*   **Frontend Framework:** React (built with Vite) + TypeScript
-*   **UI Styling:** Bootstrap
-*   **Deployment:** Cloudflare Worker (integrated frontend and backend deployment)
+This project provides IP address and ASN information lookup services. It leverages Cloudflare's serverless ecosystem (Workers, D1, Pages) for development and deployment.
 
 ## Project Structure
 
-*   `backend/`: Contains the `ispinfo-backend-worker` (Dispatcher/Aggregator) and its related files.
-*   `gateway/`: Contains the `ispinfo-gateway-worker` (API Gateway) and its related files.
+```
+ispinfo.io/
+├── frontend/          # 前端代码 (React + Vite + TypeScript)
+├── backend/           # 后端代码 (Cloudflare Workers)
+│   ├── src/           # 源代码
+│   ├── wrangler.toml  # Cloudflare Workers 配置
+│   └── package.json   # 后端依赖
+├── .github/
+│   └── workflows/     # GitHub Actions 工作流
+│       ├── deploy-backend.yml    # 后端部署工作流
+│       └── rollback-backend.yml  # 后端回滚工作流
+└── README.md          # 项目说明
+```
+
+## Features
+
+- IP 地址信息查询
+- ASN 信息查询
+- 响应式设计，支持移动端
+- 自动化部署和回滚
+
+## Development
 
 ## Setup and Local Development
 
@@ -44,19 +56,29 @@ cd backend
 npm install
 ```
 
-#### Configure API Keys
+#### 环境变量配置
 
-Before deploying, you need to set your external API keys (e.g., `ipregistry.co`) as Cloudflare Worker secrets. Navigate to the `backend` directory and run the following command for each key, replacing `<YOUR_API_KEY_NAME>` and `<YOUR_API_KEY>` with your actual key details:
+#### 本地开发环境
 
-```bash
-npx wrangler secret put <YOUR_API_KEY_NAME>
-```
+1. 在 `backend` 目录下创建 `.dev.vars` 文件，添加以下环境变量：
+   ```
+   IPREGISTRY_API_KEY=your_ipregistry_api_key
+   NODE_ENV=development
+   ```
 
-For example, for ipregistry:
+2. 对于生产环境，需要将环境变量设置为 Cloudflare Workers 的 secret：
+   ```bash
+   cd backend
+   npx wrangler secret put IPREGISTRY_API_KEY
+   ```
 
-```bash
-npx wrangler secret put IPREGISTRY_API_KEY
-```
+#### GitHub Actions 环境变量
+
+1. 在 GitHub 仓库中，进入 Settings > Secrets and variables > Actions
+2. 添加以下 secrets：
+   - `CLOUDFLARE_API_TOKEN`: Cloudflare API 令牌
+   - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 账户 ID
+   - `IPREGISTRY_API_KEY`: IP 查询 API 密钥
 
 #### Generate Worker Types
 
@@ -127,13 +149,61 @@ Once the server is running, you can access the application in your browser at th
 *   **`/ip`**: Returns the client's own IP address.
 *   **`/{ip}`**: Returns detailed information (ASN, organization, city, country, etc.) for the specified IP address.
 
-## Deployment
+## 部署说明
 
-To deploy your Workers to Cloudflare, navigate to their respective directories (`backend` and `gateway/ispinfo-gateway-worker`) and run:
+### 前端部署
 
-```bash
-npx wrangler deploy
-```
+1. 进入前端目录：
+   ```bash
+   cd frontend
+   ```
+
+2. 构建前端代码：
+   ```bash
+   npm run build
+   ```
+
+3. 部署到 Cloudflare Pages：
+   ```bash
+   npx wrangler pages deploy ./dist --project-name=ispinfo-frontend
+   ```
+
+### 后端部署
+
+1. 进入后端目录：
+   ```bash
+   cd backend
+   ```
+
+2. 部署到 Cloudflare Workers：
+   ```bash
+   npx wrangler deploy
+   ```
+
+### 使用 GitHub Actions 自动化部署
+
+项目已经配置了 GitHub Actions 工作流，当代码推送到特定分支时会自动部署：
+
+- 推送到 `main` 分支：自动部署到生产环境
+- 推送到 `staging` 分支：自动部署到预发布环境
+
+#### 手动触发部署
+
+1. 在 GitHub 仓库中，进入 "Actions" 标签页
+2. 选择 "Deploy Backend" 或 "Deploy Frontend" 工作流
+3. 点击 "Run workflow" 按钮
+4. 选择目标分支和环境
+5. 点击 "Run workflow" 开始部署
+
+#### 回滚部署
+
+如果需要回滚到之前的版本：
+
+1. 在 GitHub 仓库中，进入 "Actions" 标签页
+2. 选择 "Rollback Backend" 或 "Rollback Frontend" 工作流
+3. 点击 "Run workflow" 按钮
+4. 选择要回滚到的部署版本
+5. 点击 "Run workflow" 开始回滚
 
 ## Future Enhancements
 

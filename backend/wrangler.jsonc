@@ -14,16 +14,25 @@
   "routes": [
     {
       "pattern": "api.ispinfo.io/*",
-      "zone_id": "8a402f05b3cd21d466170171fdbfea81" // You need to replace YOUR_ZONE_ID with your actual Cloudflare Zone ID
+      "zone_id": "8a402f05b3cd21d466170171fdbfea81"
     }
   ],
   "env": {
+    "staging": {
+      "name": "ispinfo-backend-worker-staging",
+      "routes": [
+        {
+          "pattern": "staging.api.ispinfo.io/*",
+          "zone_id": "8a402f05b3cd21d466170171fdbfea81"
+        }
+      ]
+    },
     "production": {
       "name": "ispinfo-backend-worker-production",
       "routes": [
         {
           "pattern": "api.ispinfo.io/*",
-          "zone_id": "Y8a402f05b3cd21d466170171fdbfea8" // You need to replace YOUR_ZONE_ID with your actual Cloudflare Zone ID
+          "zone_id": "8a402f05b3cd21d466170171fdbfea81"
         }
       ]
     }

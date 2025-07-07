@@ -26,12 +26,12 @@ jobs:
     name: Deploy Backend
     runs-on: ubuntu-latest
     
-    # 设置环境变量
+    """    # Set environment based on branch
     env:
-      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ENVIRONMENT: ${{ (github.ref == 'refs/heads/main' && 'production') || (github.ref == 'refs/heads/production' && 'production') || 'staging' }}
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-    
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -54,15 +54,14 @@ jobs:
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
           command: publish --env ${{ env.ENVIRONMENT }} --verbose
-          workingDirectory: './backend'
+          workingDirectory: 'backend'
         env:
           NODE_ENV: ${{ env.ENVIRONMENT }}
-          # 应用特定的环境变量
           IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}""
 
       - name: Verify deployment
         run: |
