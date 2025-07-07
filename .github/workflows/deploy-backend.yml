@@ -1,34 +1,13 @@
-name: Deploy Backend to Cloudflare Workers
+name: Deploy Backend to Cloudflare Workers (Simplified)
 
 on:
   push:
-    branches: [main, production, staging]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-  pull_request:
-    branches: [main, production, staging]
-    paths:
-      - 'backend/**'
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - production
-          - staging
+    branches: [staging]
 
 jobs:
   deploy-backend:
-    name: Deploy Backend
+    name: Deploy Backend (Staging)
     runs-on: ubuntu-latest
-    
-    env:
-      # Set environment based on the branch name
-      ENVIRONMENT: ${{ (github.ref == 'refs/heads/main' && 'production') || (github.ref == 'refs/heads/production' && 'production') || 'staging' }}
 
     steps:
       - name: Checkout code
@@ -38,8 +17,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
@@ -52,39 +29,10 @@ jobs:
       - name: List build artifacts
         run: ls -R backend/dist || echo "dist directory not found."
 
-      - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
+      - name: Deploy to Cloudflare Workers (Staging)
         uses: cloudflare/wrangler-action@3.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: publish --env ${{ env.ENVIRONMENT }} --verbose
+          command: publish --env staging --verbose
           workingDirectory: 'backend'
-        env:
-          NODE_ENV: ${{ env.ENVIRONMENT }}
-          # Pass secrets to the worker
-          IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
-
-      - name: Verify deployment
-        run: |
-          echo "Successfully deployed to ${{ env.ENVIRONMENT }} environment"
-          echo "Deployment URL: https://${{ env.ENVIRONMENT == 'production' && 'api.ispinfo.io' || 'staging.api.ispinfo.io' }}"
-
-      # 添加部署状态通知（可选，需要设置 SLACK_WEBHOOK_URL 密钥）
-      - name: Notify deployment status
-        if: always() && github.event_name != 'workflow_dispatch'  # 手动触发时不发送通知
-        uses: rtCamp/action-slack-notify@v2.2.0
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL || '' }}
-          SLACK_TITLE: 'Backend Deployment ${{ job.status }} [${{ env.ENVIRONMENT }}]'
-          SLACK_MESSAGE: >
-            ${{ format('Repository: {0}\nBranch: {1}\nEvent: {2}\nStatus: {3}', 
-                      github.repository,
-                      github.ref_name,
-                      github.event_name,
-                      format('{0} {1}', 
-                             job.status == 'success' && '✅' || '❌',
-                             job.status == 'success' && 'Succeeded' || 'Failed')) }}
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
-          SLACK_USERNAME: GitHub Actions
-          SLACK_ICON_EMOJI: ':github:'
