@@ -54,8 +54,8 @@ jobs:
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
         with:
-          apiToken: ${{ env.CF_API_TOKEN }}
-          accountId: ${{ env.CF_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: publish --env ${{ env.ENVIRONMENT }} --verbose
           workingDirectory: 'backend'
         env:
