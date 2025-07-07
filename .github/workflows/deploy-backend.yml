@@ -60,13 +60,15 @@ jobs:
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
         with:
-          apiToken: ${{ env.CF_API_TOKEN }}
+          apiToken: ${{ secrets.CF_API_TOKEN }}
           command: publish --env ${{ env.ENVIRONMENT }}
           workingDirectory: './backend'
         env:
           NODE_ENV: ${{ env.ENVIRONMENT }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ env.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Verify deployment
         run: |
