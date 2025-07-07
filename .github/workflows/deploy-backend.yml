@@ -55,6 +55,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         run: |
           # 安装特定版本的 wrangler 以避免兼容性问题
           npm install -g wrangler@3.4.0
@@ -63,25 +65,44 @@ jobs:
           echo "=== Wrangler 版本信息 ==="
           wrangler --version
           
-          # 验证登录状态（不再使用已弃用的 wrangler config）
+          # 验证登录状态
           echo "=== Wrangler 登录状态 ==="
-          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "使用 API 令牌进行身份验证"
-            # 创建 Wrangler 配置文件
-            mkdir -p "$HOME/.wrangler/config"
-            echo "# Wrangler configuration" > "$HOME/.wrangler/config/default.toml"
-            echo "api_token = \"$CLOUDFLARE_API_TOKEN\"" >> "$HOME/.wrangler/config/default.toml"
-            echo "account_id = \"$CLOUDFLARE_ACCOUNT_ID\"" >> "$HOME/.wrangler/config/default.toml"
-          else
-            echo "错误: 未设置 CLOUDFLARE_API_TOKEN 环境变量"
+          
+          # 确保环境变量已设置
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "错误: 缺少必要的 Cloudflare 凭据"
+            echo "CLOUDFLARE_API_TOKEN 已设置: $([ -n "$CLOUDFLARE_API_TOKEN" ] && echo "是" || echo "否")"
+            echo "CLOUDFLARE_ACCOUNT_ID 已设置: $([ -n "$CLOUDFLARE_ACCOUNT_ID" ] && echo "是" || echo "否")"
             exit 1
           fi
+          
+          # 创建 Wrangler 配置文件
+          echo "=== 创建 Wrangler 配置文件 ==="
+          mkdir -p "$HOME/.wrangler/config"
+          cat > "$HOME/.wrangler/config/default.toml" <<EOL
+# Wrangler configuration
+api_token = "$CLOUDFLARE_API_TOKEN"
+account_id = "$CLOUDFLARE_ACCOUNT_ID"
+EOL
+          
+          # 验证配置文件
+          echo "=== 验证 Wrangler 配置 ==="
+          ls -la "$HOME/.wrangler/config/"
+          echo "--- default.toml 内容 ---"
+          cat "$HOME/.wrangler/config/default.toml"
+          
+          # 测试 Wrangler 认证
+          echo "=== 测试 Wrangler 认证 ==="
+          WRANGLER_HOME="$HOME/.wrangler" wrangler whoami || {
+            echo "错误: Wrangler 认证失败"
+            exit 1
+          }
           
           # 打印环境变量（调试用）
           echo "=== 环境变量 ==="
           echo "ENVIRONMENT: $ENVIRONMENT"
-          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] && echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}" || echo "CLOUDFLARE_ACCOUNT_ID 未设置"
-          [ -n "$CLOUDFLARE_API_TOKEN" ] && echo "CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:0:4}...${CLOUDFLARE_API_TOKEN: -4}" || echo "CLOUDFLARE_API_TOKEN 未设置"
+          echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
+          echo "CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:0:4}...${CLOUDFLARE_API_TOKEN: -4}"
           [ -n "$IPREGISTRY_API_KEY" ] && echo "IPREGISTRY_API_KEY: ${IPREGISTRY_API_KEY:0:4}...${IPREGISTRY_API_KEY: -4}" || echo "IPREGISTRY_API_KEY 未设置"
           [ -n "$TURNSTILE_SECRET_KEY" ] && echo "TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:0:4}...${TURNSTILE_SECRET_KEY: -4}" || echo "TURNSTILE_SECRET_KEY 未设置"
           
@@ -96,7 +117,10 @@ jobs:
             
             # 验证 wrangler.toml 格式
             echo "=== 验证 wrangler.toml 格式 ==="
-            wrangler deploy --dry-run --outdir=./dist || echo "wrangler.toml 格式验证失败"
+            WRANGLER_HOME="$HOME/.wrangler" wrangler deploy --dry-run --outdir=./dist || {
+              echo "错误: wrangler.toml 格式验证失败"
+              exit 1
+            }
           else
             echo "错误: wrangler.toml 不存在"
             exit 1
