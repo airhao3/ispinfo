@@ -7,7 +7,7 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"build:frontend": "cd ../frontend && npm run build && cp -r dist ../backend/public",
-		"build": "node build.js",
+		"build": "tsc",
 		"test": "vitest",
 		"cf-typegen": "wrangler types"
 	},
