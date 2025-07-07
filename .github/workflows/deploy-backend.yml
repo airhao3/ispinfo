@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20.x'
           cache: 'npm'
           cache-dependency-path: 'backend/package-lock.json'
 
@@ -73,15 +73,19 @@ jobs:
           echo "Successfully deployed to ${{ env.ENVIRONMENT }} environment"
           echo "Deployment URL: https://${{ env.ENVIRONMENT == 'production' && 'api.ispinfo.io' || 'staging.api.ispinfo.io' }}"
 
-      # 添加部署状态通知（可选）
+      # 添加部署状态通知（可选，需要设置 SLACK_WEBHOOK_URL 密钥）
       - name: Notify deployment status
-        if: always()
+        if: always() && github.event_name != 'workflow_dispatch'  # 手动触发时不发送通知
         uses: rtCamp/action-slack-notify@v2.2.0
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_TITLE: 'Backend Deployment ${{ job.status }}'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL || '' }}
+          SLACK_TITLE: 'Backend Deployment ${{ job.status }} [${{ env.ENVIRONMENT }}]'
           SLACK_MESSAGE: >
-            ${{ format('Deployment to {0} environment {1}', 
-                      env.ENVIRONMENT, 
-                      job.status == 'success' && 'succeeded' || 'failed') }}
+            ${{ format('Repository: {0}\nBranch: {1}\nEvent: {2}\nStatus: {3}', 
+                      github.repository,
+                      github.ref_name,
+                      github.event_name,
+                      job.status == 'success' ? '✅ Succeeded' : '❌ Failed') }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_USERNAME: GitHub Actions
+          SLACK_ICON_EMOJI: ':github:'
