@@ -2,11 +2,11 @@ name: Deploy Backend to Cloudflare Workers (Simplified)
 
 on:
   push:
-    branches: [staging]
+    branches: [production]
 
 jobs:
   deploy-backend:
-    name: Deploy Backend (Staging)
+    name: Deploy Backend (Production)
     runs-on: ubuntu-latest
 
     steps:
@@ -29,10 +29,10 @@ jobs:
       - name: List build artifacts
         run: ls -R backend/dist || echo "dist directory not found."
 
-      - name: Deploy to Cloudflare Workers (Staging)
+      - name: Deploy to Cloudflare Workers (Production)
         uses: cloudflare/wrangler-action@3.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: publish --env staging --verbose
+          command: publish --env production --verbose
           workingDirectory: 'backend'
