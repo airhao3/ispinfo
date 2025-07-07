@@ -51,48 +51,16 @@ jobs:
         run: npm run build
         working-directory: ./backend
 
-      - name: Configure Wrangler
-        run: |
-          # 安装最新版 Wrangler
-          npm install -g wrangler@latest
-          
-          # 打印版本信息
-          echo "=== Wrangler 版本信息 ==="
-          wrangler --version
-          
-          # 打印环境变量（调试用）
-          echo "=== 环境变量 ==="
-          echo "ENVIRONMENT: $ENVIRONMENT"
-          echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
-          echo "CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:0:4}...${CLOUDFLARE_API_TOKEN: -4}"
-          
-          # 验证环境变量
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "错误: 缺少必要的 Cloudflare 凭据"
-            echo "CLOUDFLARE_API_TOKEN 已设置: $([ -n "$CLOUDFLARE_API_TOKEN" ] && echo "是" || echo "否")"
-            echo "CLOUDFLARE_ACCOUNT_ID 已设置: $([ -n "$CLOUDFLARE_ACCOUNT_ID" ] && echo "是" || echo "否")"
-            exit 1
-          fi
-          
-          # 测试 Wrangler 认证
-          echo "=== 测试 Wrangler 认证 ==="
-          wrangler whoami || {
-            echo "错误: Wrangler 认证失败"
-            exit 1
-          }
-
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: publish --env ${{ env.ENVIRONMENT }} --verbose
           workingDirectory: './backend'
         env:
           NODE_ENV: ${{ env.ENVIRONMENT }}
-          # 设置 Cloudflare 环境变量
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          # 设置应用特定的环境变量
+          # 应用特定的环境变量
           IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
