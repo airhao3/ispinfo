@@ -2,9 +2,14 @@ name: Deploy Backend to Cloudflare Workers
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main, production, staging]
     paths:
-      - 'backend/**'  # 只有 backend 目录变化时触发
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  pull_request:
+    branches: [main, production, staging]
+    paths:
+      - 'backend/**'
   workflow_dispatch:
     inputs:
       environment:
