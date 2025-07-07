@@ -74,6 +74,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2.2.0
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_TITLE: "Backend Deployment ${{ job.status }}"
-          SLACK_MESSAGE: "Deployment to ${{ env.ENVIRONMENT }} environment ${{ job.status == 'success' && 'succeeded' : 'failed' }}"
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' : 'danger' }}
+          SLACK_TITLE: 'Backend Deployment ${{ job.status }}'
+          SLACK_MESSAGE: >
+            ${{ format('Deployment to {0} environment {1}', 
+                      env.ENVIRONMENT, 
+                      job.status == 'success' && 'succeeded' || 'failed') }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
