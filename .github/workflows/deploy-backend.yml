@@ -50,8 +50,7 @@ jobs:
         working-directory: ./backend
 
       - name: List build artifacts
-        run: ls -R
-        working-directory: ./backend/dist
+        run: ls -R backend/dist || echo "dist directory not found."
 
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
