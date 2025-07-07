@@ -60,20 +60,22 @@ jobs:
           echo "=== Wrangler 版本信息 ==="
           wrangler --version
           
-          # 验证 Wrangler 配置
-          echo "=== Wrangler 配置 ==="
-          wrangler config
-          
-          # 验证登录状态
+          # 验证登录状态（不再使用已弃用的 wrangler config）
           echo "=== Wrangler 登录状态 ==="
-          wrangler whoami || echo "Wrangler whoami 失败，继续..."
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "使用 API Token 进行身份验证"
+            echo "CLOUDFLARE_ACCOUNT_ID 已设置: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
+          else
+            echo "错误: 未设置 CLOUDFLARE_API_TOKEN 环境变量"
+            exit 1
+          fi
           
           # 打印环境变量（不显示敏感信息）
           echo "=== 环境变量检查 ==="
           echo "NODE_ENV: $NODE_ENV"
           echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
-          echo "IPREGISTRY_API_KEY: ${IPREGISTRY_API_KEY:0:4}...${IPREGISTRY_API_KEY: -4}"
-          echo "TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:0:4}...${TURNSTILE_SECRET_KEY: -4}"
+          [ -n "$IPREGISTRY_API_KEY" ] && echo "IPREGISTRY_API_KEY: ${IPREGISTRY_API_KEY:0:4}...${IPREGISTRY_API_KEY: -4}" || echo "IPREGISTRY_API_KEY 未设置"
+          [ -n "$TURNSTILE_SECRET_KEY" ] && echo "TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:0:4}...${TURNSTILE_SECRET_KEY: -4}" || echo "TURNSTILE_SECRET_KEY 未设置"
           
           # 打印当前目录结构
           echo "=== 目录结构 ==="
@@ -81,7 +83,16 @@ jobs:
           
           # 检查 wrangler.toml 文件
           echo "=== wrangler.toml 内容 ==="
-          cat ./backend/wrangler.toml || echo "wrangler.toml 不存在"
+          if [ -f "./backend/wrangler.toml" ]; then
+            cat ./backend/wrangler.toml
+            
+            # 验证 wrangler.toml 格式
+            echo "=== 验证 wrangler.toml 格式 ==="
+            wrangler deploy --dry-run --outdir=./dist || echo "wrangler.toml 格式验证失败"
+          else
+            echo "错误: wrangler.toml 不存在"
+            exit 1
+          fi
 
       - name: Deploy to Cloudflare Workers (${{ env.ENVIRONMENT }})
         uses: cloudflare/wrangler-action@3.0.0
