@@ -104,6 +104,9 @@ jobs:
           cache: 'false'
         env:
           NODE_ENV: ${{ env.ENVIRONMENT }}
+          # Set both CF_* and CLOUDFLARE_* variants for compatibility
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
