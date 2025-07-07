@@ -52,6 +52,9 @@ jobs:
         working-directory: ./backend
 
       - name: Configure Wrangler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           # 安装特定版本的 wrangler 以避免兼容性问题
           npm install -g wrangler@3.4.0
@@ -63,17 +66,22 @@ jobs:
           # 验证登录状态（不再使用已弃用的 wrangler config）
           echo "=== Wrangler 登录状态 ==="
           if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "使用 API Token 进行身份验证"
-            echo "CLOUDFLARE_ACCOUNT_ID 已设置: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
+            echo "使用 API 令牌进行身份验证"
+            # 创建 Wrangler 配置文件
+            mkdir -p "$HOME/.wrangler/config"
+            echo "# Wrangler configuration" > "$HOME/.wrangler/config/default.toml"
+            echo "api_token = \"$CLOUDFLARE_API_TOKEN\"" >> "$HOME/.wrangler/config/default.toml"
+            echo "account_id = \"$CLOUDFLARE_ACCOUNT_ID\"" >> "$HOME/.wrangler/config/default.toml"
           else
             echo "错误: 未设置 CLOUDFLARE_API_TOKEN 环境变量"
             exit 1
           fi
           
-          # 打印环境变量（不显示敏感信息）
-          echo "=== 环境变量检查 ==="
-          echo "NODE_ENV: $NODE_ENV"
-          echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}"
+          # 打印环境变量（调试用）
+          echo "=== 环境变量 ==="
+          echo "ENVIRONMENT: $ENVIRONMENT"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] && echo "CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:0:4}...${CLOUDFLARE_ACCOUNT_ID: -4}" || echo "CLOUDFLARE_ACCOUNT_ID 未设置"
+          [ -n "$CLOUDFLARE_API_TOKEN" ] && echo "CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:0:4}...${CLOUDFLARE_API_TOKEN: -4}" || echo "CLOUDFLARE_API_TOKEN 未设置"
           [ -n "$IPREGISTRY_API_KEY" ] && echo "IPREGISTRY_API_KEY: ${IPREGISTRY_API_KEY:0:4}...${IPREGISTRY_API_KEY: -4}" || echo "IPREGISTRY_API_KEY 未设置"
           [ -n "$TURNSTILE_SECRET_KEY" ] && echo "TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:0:4}...${TURNSTILE_SECRET_KEY: -4}" || echo "TURNSTILE_SECRET_KEY 未设置"
           
