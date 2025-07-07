@@ -26,11 +26,9 @@ jobs:
     name: Deploy Backend
     runs-on: ubuntu-latest
     
-    """    # Set environment based on branch
     env:
+      # Set environment based on the branch name
       ENVIRONMENT: ${{ (github.ref == 'refs/heads/main' && 'production') || (github.ref == 'refs/heads/production' && 'production') || 'staging' }}
-      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
       - name: Checkout code
@@ -60,8 +58,9 @@ jobs:
           workingDirectory: 'backend'
         env:
           NODE_ENV: ${{ env.ENVIRONMENT }}
+          # Pass secrets to the worker
           IPREGISTRY_API_KEY: ${{ secrets.IPREGISTRY_API_KEY }}
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}""
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
 
       - name: Verify deployment
         run: |
