@@ -1,0 +1,33 @@
+name: Rollback Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionId:
+        description: 'The version ID to rollback to (from deployment history)'
+        required: true
+
+jobs:
+  rollback-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+          
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./backend
+
+      - name: Rollback Worker
+        uses: cloudflare/wrangler-action@3.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: rollback ${{ github.event.inputs.versionId }} --env production
+          workingDirectory: './backend'

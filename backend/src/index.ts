@@ -16,6 +16,7 @@ interface TurnstileResponse {
 interface Env {
   IPREGISTRY_API_KEY: string;
   TURNSTILE_SECRET_KEY: string;
+  ENVIRONMENT?: 'development' | 'production';
 }
 
 // Allowed origins for CORS
@@ -150,14 +151,27 @@ export default {
       return new Response(null, { status: 204, headers });
     }
 
+    // 验证 Origin 头
+    const origin = request.headers.get('Origin');
+    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+      return new Response('Not allowed', { status: 403 });
+    }
+
     const url = new URL(request.url);
     const path = url.pathname;
     let ipToLookup: string | null = null;
 
-    if (path === '/ip') {
-      ipToLookup = request.headers.get('CF-Connecting-IP') || '8.8.8.8'; // Default to a public IP for testing
+    // 获取客户端 IP 地址
+    const clientIP = request.headers.get('CF-Connecting-IP') || 
+                    request.headers.get('X-Forwarded-For')?.split(',')[0] || 
+                    '8.8.8.8'; // 默认使用 Google DNS 作为回退
+
+    if (path === '/' || path === '/ip') {
+      // 根路径或 /ip 路径返回客户端 IP 信息
+      ipToLookup = clientIP;
     } else {
-      const ipMatch = path.match(/^\/([a-fA-F0-9.:]+)$/); // Regex to match IPv4 and IPv6
+      // 处理 /{ip} 格式的路径
+      const ipMatch = path.match(/^\/([a-fA-F0-9.:]+)$/); // 匹配 IPv4 和 IPv6
       if (ipMatch) {
         ipToLookup = ipMatch[1];
       }
@@ -165,7 +179,15 @@ export default {
 
     if (!ipToLookup) {
       return createCorsResponse(
-        JSON.stringify({ error: 'No IP address provided or invalid format.' }), 
+        JSON.stringify({ 
+          error: 'No IP address provided or invalid format.',
+          usage: {
+            'Get your IP info': 'GET / or GET /ip',
+            'Lookup specific IP': 'GET /8.8.8.8',
+            'CORS enabled': 'Yes',
+            'API documentation': 'https://ipregistry.co/docs/'
+          }
+        }), 
         { 
           status: 400,
           headers: { 'Content-Type': 'application/json' }
@@ -174,41 +196,48 @@ export default {
       );
     }
 
-    // Verify Turnstile token for non-root paths
-    const turnstileToken = request.headers.get('CF-Turnstile-Token');
-    const clientIP = request.headers.get('CF-Connecting-IP') || '';
+    // 在开发环境中跳过 Turnstile 验证
+    const isDevelopment = env.ENVIRONMENT === 'development';
     
-    // Only require Turnstile verification for specific IP lookups (e.g., /8.8.8.8)
-    const isSpecificIpLookup = /^\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(path);
-    
-    if (isSpecificIpLookup) {
-      if (!turnstileToken) {
-        return createCorsResponse(
-          JSON.stringify({ error: 'Turnstile token is required for IP lookups.' }),
-          {
-            status: 400, // Bad Request
-            headers: { 'Content-Type': 'application/json' }
-          },
-          request
-        );
-      }
+    if (!isDevelopment) {
+      // 在生产环境中验证 Turnstile token
+      const turnstileToken = request.headers.get('CF-Turnstile-Token');
+      const clientIP = request.headers.get('CF-Connecting-IP') || '';
       
-      const verification = await verifyTurnstileToken(turnstileToken, env.TURNSTILE_SECRET_KEY, clientIP);
-            
-      if (!verification.success) {
-        console.log('Turnstile verification failed:', verification.error);
-        return createCorsResponse(
-          JSON.stringify({ 
-            error: 'Access denied: Invalid Turnstile token.',
-            details: verification.error
-          }),
-          {
-            status: 403, // Forbidden
-            headers: { 'Content-Type': 'application/json' }
-          },
-          request
-        );
+      // 只对特定的 IP 查询进行验证 (例如 /8.8.8.8)
+      const isSpecificIpLookup = /^\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(path);
+      
+      if (isSpecificIpLookup) {
+        if (!turnstileToken) {
+          return createCorsResponse(
+            JSON.stringify({ error: 'Turnstile token is required for IP lookups.' }),
+            {
+              status: 400, // Bad Request
+              headers: { 'Content-Type': 'application/json' }
+            },
+            request
+          );
+        }
+        
+        const verification = await verifyTurnstileToken(turnstileToken, env.TURNSTILE_SECRET_KEY, clientIP);
+              
+        if (!verification.success) {
+          console.log('Turnstile verification failed:', verification.error);
+          return createCorsResponse(
+            JSON.stringify({ 
+              error: 'Access denied: Invalid Turnstile token.',
+              details: verification.error
+            }),
+            {
+              status: 403, // Forbidden
+              headers: { 'Content-Type': 'application/json' }
+            },
+            request
+          );
+        }
       }
+    } else {
+      console.log('Running in development mode, skipping Turnstile verification');
     }
 
     try {
