@@ -1,0 +1,133 @@
+.terms-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  color: #2c3e50;
+}
+
+.terms-content {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  padding: 3rem;
+  line-height: 1.8;
+}
+
+.terms-content h1 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.last-updated {
+  color: #7f8c8d;
+  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
+}
+
+.terms-section {
+  margin-bottom: 2.5rem;
+}
+
+.terms-section h2 {
+  color: #2c3e50;
+  margin: 2rem 0 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.terms-section h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  border-radius: 3px;
+}
+
+.terms-section p {
+  margin-bottom: 1rem;
+  color: #34495e;
+  line-height: 1.8;
+}
+
+.terms-section ul {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.terms-section li {
+  margin-bottom: 0.5rem;
+  color: #34495e;
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.terms-section li::before {
+  content: '•';
+  color: #3498db;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.terms-section a {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.terms-section a:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
+.back-home {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.8rem 1.5rem;
+  background: #f8f9fa;
+  color: #2c3e50;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.back-button:hover {
+  background: #f1f1f1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+  color: #3498db;
+}
+
+@media (max-width: 768px) {
+  .terms-content {
+    padding: 2rem 1.5rem;
+  }
+  
+  .terms-content h1 {
+    font-size: 1.8rem;
+  }
+  
+  .terms-section h2 {
+    font-size: 1.3rem;
+  }
+}
