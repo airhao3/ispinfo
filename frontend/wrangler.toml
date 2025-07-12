@@ -1,21 +1,11 @@
-name = "ispinfo-frontend-worker"
-main = "_worker.js"
-compatibility_date = "2024-07-01"
+name = "frontend"
+main = "src/index.tsx"
+compatibility_date = "2025-07-11"
 
-# For Cloudflare Pages
-[site]
-bucket = "./dist"
-
-# For local development with wrangler dev
 [build]
-command = "npm run build"
+command = "npm install"
 
-# For production deployment
-[env.production]
-name = "ispinfo-frontend-worker-production"
-compatibility_date = "2024-07-01"
-
-# For preview deployments
-[env.preview]
-name = "ispinfo-frontend-worker-preview"
-route = "preview.ispinfo.pages.dev/*"
+[[kv_namespaces]]
+binding = "KV"
+id = "50616d1ac76940659249767342f288f6"
+preview_id = "50616d1ac76940659249767342f288f6"

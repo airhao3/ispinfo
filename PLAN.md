@@ -1,12 +1,12 @@
-# 项目规划: ispinfo.io 克隆版
+# 项目规划: ispinfo.io 
 
 ## 1. 项目目标
 
-构建一个功能类似于 `ispinfo.io` 的网站，提供 IP 地址和 ASN 信息的查询服务。项目将利用 Cloudflare 的无服务器生态系统（Workers, D1, Pages）进行开发和部署，并使用开源的 GeoLite2 数据库作为核心数据源。
+构建一个功能类似于 `ipinfo.io` 的网站，提供 IP 地址和 ASN 信息的查询服务。项目将利用 Cloudflare 的无服务器生态系统（Workers, D1, Pages）进行开发和部署，并使用开源的 GeoLite2 数据库作为核心数据源。
 
 ## 2. 技术选型
 
-- **数据源:** MaxMind GeoLite2 (免费版)
+- **数据源:** ipregistry.co API
 - **数据库:** Cloudflare D1
 - **后端 API:** Cloudflare Workers (TypeScript) - 包括 `ispinfo-gateway-worker` (API 网关) 和 `ispinfo-backend-worker` (调度/聚合)
 - **前端框架:** React (使用 Vite 构建) + TypeScript

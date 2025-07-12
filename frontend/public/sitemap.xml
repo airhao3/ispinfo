@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Main page -->
+  <url>
+    <loc>https://ispinfo.io/</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- About page -->
+  <url>
+    <loc>https://ispinfo.io/about</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- API Documentation -->
+  <url>
+    <loc>https://ispinfo.io/api</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Legal pages -->
+  <url>
+    <loc>https://ispinfo.io/terms</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://ispinfo.io/privacy</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://ispinfo.io/cookies</loc>
+    <lastmod>2025-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

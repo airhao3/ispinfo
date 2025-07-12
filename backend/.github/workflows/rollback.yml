@@ -1,0 +1,20 @@
+name: Rollback Cloudflare Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionId:
+        description: 'The version ID to rollback to (from deployment history)'
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback Worker
+        uses: cloudflare/wrangler-action@3.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: rollback ${{ github.event.inputs.versionId }} --env production
+        env:
+          NODE_ENV: production
